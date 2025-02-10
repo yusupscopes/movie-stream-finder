@@ -1,101 +1,151 @@
+// app/page.tsx
+"use client";
+
+import React, { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Search, Film, PlayCircle } from "lucide-react";
+import { useDebounce } from "react-use";
 import Image from "next/image";
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+interface Movie {
+  id: number;
+  title: string;
+  poster_path: string;
+  overview: string;
+  release_date: string;
+  streaming: StreamingOffer[];
+}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+interface StreamingOffer {
+  provider_name: string;
+  provider_logo: string;
+  url: string;
+}
+
+export default function Home() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const searchMovies = async (query: string) => {
+    if (!query) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `/api/movies/search?query=${encodeURIComponent(query)}`
+      );
+      const data = await response.json();
+      setMovies(data);
+    } catch (error) {
+      console.error("Error searching movies:", error);
+    }
+    setLoading(false);
+  };
+
+  useDebounce(
+    () => {
+      if (searchQuery) {
+        searchMovies(searchQuery);
+      }
+    },
+    500,
+    [searchQuery]
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4 flex items-center justify-center gap-2">
+            <Film className="w-10 h-10" />
+            Movie Stream Finder
+          </h1>
+          <p className="text-gray-400">
+            Find where to watch your favorite movies
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div className="max-w-2xl mx-auto mb-12">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search for a movie..."
+              className="w-full pl-12 pr-4 py-3 bg-gray-800 border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-blue-500"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {loading && (
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {movies.map((movie) => (
+            <Card key={movie.id} className="bg-gray-800 border-gray-700">
+              <CardContent className="p-6">
+                <div className="flex gap-4">
+                  <div className="w-32 h-48 relative rounded-lg overflow-hidden">
+                    <Image
+                      src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                      alt={movie.title}
+                      layout="fill"
+                      objectFit="cover"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-xl font-semibold mb-2">
+                      {movie.title}
+                    </h2>
+                    <p className="text-gray-400 text-sm mb-4">
+                      {new Date(movie.release_date).getFullYear()}
+                    </p>
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium flex items-center gap-2">
+                        <PlayCircle className="w-4 h-4" />
+                        Available on:
+                      </h3>
+                      {movie.streaming.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {movie.streaming.map((platform, index) => (
+                            <a
+                              key={index}
+                              href={platform.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-3 py-1 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors text-sm"
+                            >
+                              <Image
+                                src={platform.provider_logo}
+                                alt={platform.provider_name}
+                                width={16}
+                                height={16}
+                                className="mr-2 rounded"
+                              />
+                              {platform.provider_name}
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 text-sm">
+                          No streaming options found
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
